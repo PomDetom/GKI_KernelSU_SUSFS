@@ -23,3 +23,36 @@ Sources: [target netlink header](https://android.googlesource.com/kernel/common/
 Run 40444338280 compiled successfully and then exposed six undefined symbols. The root adapter now also restores `ksu_manager_appid`, initialized to `KSU_INVALID_APPID`. For Android 16 / 6.12, the SUSFS adapter supplies the actual backup-policy SELinux operations omitted from SukiSU and guards the preinit hooks when this fork has no preinit backend. See [the integration notes](../.github/actions/susfs/sukisu_compat/README.md).
 
 Verification includes five root compatibility tests and three SUSFS wiring tests. In addition, the exact GKI common source was used to compile ARM64 `drivers/kernelsu/ksu.o`, `fs/exec.o`, `security/selinux/selinuxfs.o`, and `security/selinux/hooks.o`. A relocatable link of those objects has definitions for the manager and three SELinux operations, and no unresolved references to any of the six reported symbols. The four-object compile and relocatable-link checks pass both with CFI disabled and with CONFIG_CFI_CLANG=y. These focused probes use host Clang 21 with LTO, Rust and BTF disabled; they are not the complete production-profile image build or device acceptance.
+
+## Additional LSM capacity on GKI 6.12
+
+GKI `security_add_hooks()` panics when `lsm_active_cnt` reaches
+`MAX_LSM_COUNT`. The stock `include/linux/lsm_count.h` counts neither
+Baseband Guard nor KSU, although both register an LSM. This can let a
+kernel compile and link successfully but fail during boot.
+
+After Baseband Guard setup and before networking, the build recipe runs
+`.github/scripts/fix_lsm_count.py`. It counts one additional LSM for each of
+`IS_ENABLED(CONFIG_BBG)` and `IS_ENABLED(CONFIG_KSU)`, using the existing
+trailing-comma count convention. Existing LSM registration and static-call
+bounds checks remain intact. Reapplying the same fix is harmless; unknown
+header layouts fail before writing. Kernels without this header are skipped.
+
+The fix changes only compile-time capacity. The 6.12.69 kernel, 4K pages,
+Keep KMI setting, SUSFS, NoMount, BBG and other feature settings are retained.
+It addresses the missing slots; device boot still requires verification.
+
+For an already prepared WSL workspace, apply the helper once before rebuilding:
+
+```bash
+cd ~/gki-build/GKI_KernelSU_SUSFS
+python3 .github/scripts/fix_lsm_count.py --kernel .local-build/android16-6.12/kernel/common
+scripts/wsl-build build
+scripts/wsl-build package
+```
+
+This reuses synced source and Bazel cache without reapplying the full patch set.
+
+Verified with the existing production configuration: capacity expands from 5 to 7.
+Eighteen C compiler assertions using the actual GKI headers cover SECURITY
+on/off and BBG/KSU disabled, built-in or module configurations.

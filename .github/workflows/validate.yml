@@ -37,3 +37,6 @@ jobs:
 
       - name: Test SukiSU SUSFS operation wiring
         run: python3 .github/scripts/test_sukisu_susfs.py
+
+      - name: Test additional LSM capacity
+        run: python3 .github/scripts/test_lsm_count.py

@@ -387,6 +387,11 @@ jobs:
         if: (contains(inputs.feature_set, 'BBG') || inputs.feature_set == 'All')
         uses: ./.github/actions/bbg
 
+      - name: Fix additional LSM registration capacity
+        shell: bash
+        working-directory: ${{ github.workspace }}/kernel
+        run: python3 ../.github/scripts/fix_lsm_count.py --kernel common
+
       - name: Setup Networking
         if: contains(inputs.feature_set, 'NET') || inputs.feature_set == 'All'
         uses: ./.github/actions/networking
