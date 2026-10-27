@@ -1345,7 +1345,7 @@ index 5e391cbca..b6d2e1628 100644
  	show_fd_locks(m, file, files);
  	if (seq_has_overflowed(m))
 diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 7294b14811bcf86998755eeac17544db2a4080b2..692897e57f6c013ff975d3e7c7494619287167bb 100644
+index 7294b14811bcf86998755eeac17544db2a4080b2..29b00637fa9183bb220d2120ae268fad143eabe5 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
 @@ -25,10 +25,13 @@
@@ -1455,7 +1455,7 @@ index 7294b14811bcf86998755eeac17544db2a4080b2..692897e57f6c013ff975d3e7c7494619
 -		smap_gather_stats(vma, &mss, 0);
 +#ifdef CONFIG_KSU_SUSFS_SUS_MAP
 +		if (!vma->vm_file ||
-+		    !SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
++		    !(SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file))))
 +#endif
 +			smap_gather_stats(vma, &mss, 0);
  		last_vma_end = vma->vm_end;
@@ -1472,7 +1472,7 @@ index 7294b14811bcf86998755eeac17544db2a4080b2..692897e57f6c013ff975d3e7c7494619
 -				smap_gather_stats(vma, &mss, 0);
 +#ifdef CONFIG_KSU_SUSFS_SUS_MAP
 +				if (!vma->vm_file ||
-+				    !SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
++				    !(SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file))))
 +#endif
 +					smap_gather_stats(vma, &mss, 0);
  				last_vma_end = vma->vm_end;
@@ -1484,7 +1484,7 @@ index 7294b14811bcf86998755eeac17544db2a4080b2..692897e57f6c013ff975d3e7c7494619
 -				smap_gather_stats(vma, &mss, last_vma_end);
 +#ifdef CONFIG_KSU_SUSFS_SUS_MAP
 +				if (!vma->vm_file ||
-+				    !SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
++				    !(SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file))))
 +#endif
 +					smap_gather_stats(vma, &mss, last_vma_end);
  				last_vma_end = vma->vm_end;

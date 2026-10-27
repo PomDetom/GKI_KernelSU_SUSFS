@@ -24,6 +24,12 @@ Only the task_mmu.c section of the full upstream patch is replaced. The other 23
 
 These checks establish patch applicability. Full kernel compilation, linking, boot, and concurrent mmap/munmap/mremap runtime behavior remain to be verified by a new build and device testing.
 
+### Macro negation correction
+
+[Run 40436887112](https://github.com/PomDetom/GKI_KernelSU_SUSFS/actions/runs/40436887112/job/121967817465) passed SUSFS patch application with zero rejects, then exposed an error in the initial adaptation: `SUSFS_IS_INODE_SUS_MAP` expands to an unparenthesized chain of `&&` expressions. Writing `!SUSFS_IS_INODE_SUS_MAP(...)` negates only the first operand, changes the filter's meaning, and triggers Clang's `-Werror,-Wlogical-op-parentheses` when combined with `||`.
+
+All three guards now use `!(SUSFS_IS_INODE_SUS_MAP(...))`, negating the entire expansion. Keep both the parentheses and the compiler warning enabled. The guard was checked against the macro extracted from the pinned upstream header, including marked/unmarked mappings, missing file/inode/mapping, both caller-eligibility values, and CONFIG enabled/disabled.
+
 ## Sources and license
 
 - [Original SUSFS patch](https://gitlab.com/simonpunk/susfs4ksu/-/blob/9c9f19d8395693327c78df36569b44e94c187b8a/kernel_patches/50_add_susfs_in_gki-android16-6.12.patch), simonpunk/susfs4ksu (GPL-3.0+, as recorded in THIRD_PARTY_NOTICES.md).
