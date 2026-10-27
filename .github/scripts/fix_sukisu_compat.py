@@ -17,8 +17,17 @@ def fix_sources(common, root):
     if cfg is None:
         raise ValueError("Cannot locate struct netlink_kernel_cfg in the target kernel")
     files = {name: (root / name).read_text() for name in (
-        "extension/kpm/super_access.c", "manager/throne_tracker.c", "hook/lsm_hook.c")}
+        "extension/kpm/super_access.c", "manager/throne_tracker.c", "hook/lsm_hook.c",
+        "extension/dynamic_manager.c")}
     original = dict(files)
+
+    name = "extension/dynamic_manager.c"
+    definition = "uid_t ksu_manager_appid = KSU_INVALID_APPID;"
+    if definition not in files[name]:
+        anchor = "#define DYNAMIC_MANAGER_FILE "
+        if files[name].count(anchor) != 1:
+            raise ValueError("Cannot locate the SukiSU manager state definition point")
+        files[name] = files[name].replace(anchor, definition + "\n\n" + anchor, 1)
 
     if not re.search(r"\bcb_mutex\b", cfg.group(1)):
         # The table must describe real fields; inventing an offset is invalid.

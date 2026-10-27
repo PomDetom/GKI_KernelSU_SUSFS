@@ -51,6 +51,7 @@ void __init ksu_lsm_hook_init(void)
     security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), "ksu");
 }
 '''
+MANAGER = '#define DYNAMIC_MANAGER_FILE "fixture"\n'
 
 
 class CompatibilityTests(unittest.TestCase):
@@ -60,7 +61,7 @@ class CompatibilityTests(unittest.TestCase):
         self.directory = Path(self.temporary.name)
         self.common, self.root = self.directory / "common", self.directory / "root"
         (self.common / "include/linux").mkdir(parents=True)
-        for name, content in (("extension/kpm/super_access.c", SUPER), ("manager/throne_tracker.c", THRONE), ("hook/lsm_hook.c", HOOK)):
+        for name, content in (("extension/kpm/super_access.c", SUPER), ("manager/throne_tracker.c", THRONE), ("hook/lsm_hook.c", HOOK), ("extension/dynamic_manager.c", MANAGER)):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content)
@@ -93,7 +94,7 @@ class CompatibilityTests(unittest.TestCase):
         self.assertIn("expected ';'", self.compile("bad-throne.c", THRONE, False))
         self.assertIn("incompatible", self.compile("bad-lsm.c", lsm + HOOK, False))
         changed = fix_sources(self.common, self.root)
-        self.assertEqual(len(changed), 3)
+        self.assertEqual(len(changed), 4)
         self.compile("fixed-net.c", net + (self.root / "extension/kpm/super_access.c").read_text())
         self.compile("fixed-throne.c", (self.root / "manager/throne_tracker.c").read_text())
         self.compile("fixed-lsm.c", lsm + (self.root / "hook/lsm_hook.c").read_text())
@@ -101,7 +102,7 @@ class CompatibilityTests(unittest.TestCase):
 
     def test_legacy_kernel_keeps_real_field_and_string_api(self):
         net, lsm = self.setup_headers(True, False)
-        self.assertEqual(fix_sources(self.common, self.root), ["manager/throne_tracker.c"])
+        self.assertEqual(fix_sources(self.common, self.root), ["manager/throne_tracker.c", "extension/dynamic_manager.c"])
         self.compile("legacy-net.c", net + (self.root / "extension/kpm/super_access.c").read_text())
         self.compile("legacy-lsm.c", lsm + (self.root / "hook/lsm_hook.c").read_text())
 
@@ -118,6 +119,16 @@ class CompatibilityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             fix_sources(self.common, self.root)
         self.assertEqual((self.root / "extension/kpm/super_access.c").read_text(), SUPER)
+
+    def test_manager_state_links_and_starts_invalid(self):
+        self.setup_headers(False, True)
+        fix_sources(self.common, self.root)
+        declaration = (self.root / "extension/dynamic_manager.c").read_text()
+        source = self.directory / "manager.c"
+        source.write_text('typedef unsigned int uid_t;\n#define KSU_INVALID_APPID ((uid_t)-1)\n' + declaration + '\nint main(void) { return ksu_manager_appid != KSU_INVALID_APPID; }\n')
+        binary = self.directory / "manager-test"
+        subprocess.run([os.environ.get("CC", "clang"), "-Wall", "-Werror", str(source), "-o", str(binary)], check=True)
+        subprocess.run([str(binary)], check=True)
 
 
 if __name__ == "__main__":

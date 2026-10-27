@@ -145,6 +145,15 @@ runs:
         sublevel: ${{ inputs.sublevel }}
         os_patch_level: ${{ inputs.os_patch_level }}
 
+    - name: Restore SukiSU Android 16 SUSFS operation interfaces
+      if: inputs.root_flavor == 'sukisu-ultra' && inputs.version == 'android16-6.12'
+      shell: bash
+      working-directory: ${{ github.workspace }}/kernel
+      run: |
+        python3 "${{ github.workspace }}/.github/scripts/fix_sukisu_susfs.py" \
+          common SukiSU-Ultra/kernel \
+          "${{ github.workspace }}/.github/actions/susfs/sukisu_compat/selinux_operations.inc"
+
     - name: Revert SUSFS Fake Patches
       uses: ./.github/actions/susfs-revert-patches
       with:
