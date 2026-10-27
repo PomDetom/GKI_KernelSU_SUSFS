@@ -2,7 +2,7 @@ name: Validate
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, wsl]
   pull_request:
     branches: [main, dev]
   workflow_dispatch:
@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate Python syntax
         run: python3 .github/scripts/validate_python.py
+
+      - name: Test WSL build adapter
+        run: python3 scripts/test_wsl_build.py

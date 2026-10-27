@@ -1,0 +1,26 @@
+{
+  "manifest_branch": "common-android16-6.12-2026-03",
+  "kernel_commit": "68067f2dc973fef7f359efc0fd07e37a97a1d099",
+  "jobs": 4,
+  "inputs": {
+    "version": "android16-6.12",
+    "android_version": "android16",
+    "kernel_version": "6.12",
+    "sublevel": "69",
+    "os_patch_level": "2026-03",
+    "variant": "SukiSU-Ultra",
+    "root_flavor": "sukisu-ultra",
+    "root_commit": "05f5cdf082d32bbc651c205ba4bdd1dc66cca7f5",
+    "susfs_commit": "9c9f19d8395693327c78df36569b44e94c187b8a",
+    "nomount_commit": "e240bb031820fd3f7de5dadb007281b33bb70634",
+    "kernel_patches_commit": "159a8f3b93af582b07d0d44bfa7d08b96d667ec0",
+    "anykernel3_commit": "e1e9dce98430c5c6f231f7094a8c7f4ecaf50948",
+    "droidspaces_commit": "d0b3a2e1fac8d238f78119879811119be35d32f4",
+    "feature_set": "SUSFS+NoMount+BBG+NET+DS+NTSync+Ptrace+Unicode+BPF",
+    "brand_name": "Wild",
+    "keep_kmi": true,
+    "allow_version_mismatch": false,
+    "page_size": "4k",
+    "stock_config_artifact": ""
+  }
+}

@@ -39,6 +39,8 @@ Generic kernels built on [Google's GKI sources](https://android.googlesource.com
 
 Fork the repository and follow **[Build Your Own Kernel](docs/build-from-fork.md)** to select one kernel family, patch level, root implementation, and feature set in GitHub Actions.
 
+For persistent local builds on Ubuntu / WSL2, see **[Build in WSL2](docs/build-in-wsl.md)**.
+
 ---
 
 ## Installation

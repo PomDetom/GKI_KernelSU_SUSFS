@@ -5,7 +5,7 @@ import concurrent.futures
 import pathlib
 import sys
 
-EXCLUDE_DIRS = {".git", "venv", ".venv"}
+EXCLUDE_DIRS = {".git", ".local-build", "venv", ".venv"}
 
 
 def find_python_files(root="."):

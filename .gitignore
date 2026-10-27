@@ -4,3 +4,5 @@ kernel-manifests/
 kernels/
 bbr/
 __pycache__/
+# Persistent WSL source, build outputs and local state
+.local-build/

@@ -55,6 +55,7 @@ runs:
       working-directory: ${{ github.workspace }}/kernel
       run: |
         PAGE_SIZE="${{ inputs.page_size }}"
+        OUTPUT_DIR="${KERNEL_OUT_DIR:-/home/runner/out}"
         sed -i 's/check_defconfig//' ./common/build.config.gki
         if [ -f "build/build.sh" ]; then
           if [ "$PAGE_SIZE" != "4k" ]; then
@@ -67,16 +68,22 @@ runs:
           SKIP_VENDOR_BOOT=1 \
           SKIP_EXT_MODULES=1 \
           SKIP_CP_KERNEL_HDR=1 \
-          OUT_DIR="/home/runner/out" \
+          OUT_DIR="$OUTPUT_DIR" \
           LTO=thin \
           BUILD_CONFIG=common/build.config.gki.aarch64 \
           CC="/usr/bin/ccache clang" \
           CXX="/usr/bin/ccache clang++" \
           HOSTCC="/usr/bin/ccache clang" \
           HOSTCXX="/usr/bin/ccache clang++" \
-          build/build.sh -j"$(nproc)"
+          build/build.sh -j"${KERNEL_BUILD_JOBS:-$(nproc)}"
         else
-          sed -i '/name = "kernel_aarch64",/a\    check_defconfig = "disabled",' common/BUILD.bazel
+          if ! sed -n '/name = "kernel_aarch64",/,/^)/p' common/BUILD.bazel | grep -q 'check_defconfig = "disabled"'; then
+            sed -i '/name = "kernel_aarch64",/a\    check_defconfig = "disabled",' common/BUILD.bazel
+          fi
+          JOB_FLAGS=()
+          if [ -n "${KERNEL_BUILD_JOBS:-}" ]; then
+            JOB_FLAGS+=(--jobs="$KERNEL_BUILD_JOBS" --make_jobs="$KERNEL_BUILD_JOBS")
+          fi
           PAGE_SIZE_FLAGS=()
           if [ "$PAGE_SIZE" = "16k" ]; then
             PAGE_SIZE_FLAGS+=(--page_size=16k)
@@ -84,7 +91,8 @@ runs:
           tools/bazel build \
             --config=fast \
             "${PAGE_SIZE_FLAGS[@]}" \
-            --disk_cache=/home/runner/.cache/bazel \
+            "${JOB_FLAGS[@]}" \
+            --disk_cache="${BAZEL_CACHE_DIR:-/home/runner/.cache/bazel}" \
             //common:kernel_aarch64/Image
         fi
 
@@ -94,6 +102,7 @@ runs:
       run: |
         set -euo pipefail
         PAGE_SIZE="${{ inputs.page_size }}"
+        OUTPUT_DIR="${KERNEL_OUT_DIR:-/home/runner/out}"
 
         # Kleaf writes the resolved .config under the kernel_config rule output
         # dir; the legacy build.sh writes it into OUT_DIR. Locate it instead of
@@ -101,11 +110,11 @@ runs:
         CONFIG_FILE=""
         for candidate in \
           bazel-bin/common/kernel_aarch64_config/out_dir/.config \
-          /home/runner/out/.config; do
+          "$OUTPUT_DIR/.config"; do
           if [ -f "$candidate" ]; then CONFIG_FILE="$candidate"; break; fi
         done
         if [ -z "$CONFIG_FILE" ]; then
-          CONFIG_FILE="$(find bazel-bin/common /home/runner/out -maxdepth 4 -name .config -type f 2>/dev/null | head -n1 || true)"
+          CONFIG_FILE="$(find bazel-bin/common "$OUTPUT_DIR" -maxdepth 4 -name .config -type f 2>/dev/null | head -n1 || true)"
         fi
         if [ -z "$CONFIG_FILE" ]; then
           if [ "$PAGE_SIZE" != "16k" ]; then
@@ -123,7 +132,7 @@ runs:
         # Susfs-presence probe on the built image: the fs/susfs.o objects leave
         # their log-format strings in .rodata; a zero count means susfs was
         # trimmed somewhere between config and link.
-        for img in bazel-bin/common/kernel_aarch64/Image /home/runner/out/dist/Image; do
+        for img in bazel-bin/common/kernel_aarch64/Image "$OUTPUT_DIR/dist/Image"; do
           if [ -f "$img" ]; then
             echo "susfs strings in $(basename "$img"): $(grep -ac susfs "$img" || true)"
             break
@@ -171,14 +180,15 @@ runs:
       working-directory: ${{ github.workspace }}/kernel
       run: |
         set -euo pipefail
+        OUTPUT_DIR="${KERNEL_OUT_DIR:-/home/runner/out}"
         if [ -f "bazel-bin/common/kernel_aarch64/Image" ]; then
           echo "Found Image at bazel-bin/common/kernel_aarch64/Image"
           cp "bazel-bin/common/kernel_aarch64/Image" "${{ github.workspace }}/AnyKernel3/Image"
           exit 0
         fi
-        if [ -f "/home/runner/out/dist/Image" ]; then
-          echo "Found Image at /home/runner/out/dist/Image"
-          cp "/home/runner/out/dist/Image" "${{ github.workspace }}/AnyKernel3/Image"
+        if [ -f "$OUTPUT_DIR/dist/Image" ]; then
+          echo "Found Image at $OUTPUT_DIR/dist/Image"
+          cp "$OUTPUT_DIR/dist/Image" "${{ github.workspace }}/AnyKernel3/Image"
           exit 0
         fi
 

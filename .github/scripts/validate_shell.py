@@ -5,7 +5,7 @@ import pathlib
 import subprocess
 import sys
 
-EXCLUDE_DIRS = {".git"}
+EXCLUDE_DIRS = {".git", ".local-build"}
 
 
 def find_shell_files(root="."):
