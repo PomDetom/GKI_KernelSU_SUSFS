@@ -50,6 +50,11 @@ runs:
     #       exit 1
     #     fi
 
+    - name: Set Actual Build Timestamp
+      shell: bash
+      working-directory: ${{ github.workspace }}/kernel
+      run: python3 ../.github/scripts/build_timestamp.py
+
     - name: 'Build Kernel'
       shell: bash
       working-directory: ${{ github.workspace }}/kernel
@@ -83,6 +88,7 @@ runs:
           fi
           tools/bazel build \
             --config=fast \
+            --config=stamp \
             "${PAGE_SIZE_FLAGS[@]}" \
             --disk_cache=/home/runner/.cache/bazel \
             //common:kernel_aarch64/Image
