@@ -17,3 +17,9 @@ python3 .github/scripts/test_sukisu_compat.py
 ```
 
 Sources: [target netlink header](https://android.googlesource.com/kernel/common/+/68067f2dc973fef7f359efc0fd07e37a97a1d099/include/linux/netlink.h), [target LSM header](https://android.googlesource.com/kernel/common/+/68067f2dc973fef7f359efc0fd07e37a97a1d099/include/linux/lsm_hooks.h), and [pinned SukiSU source](https://github.com/SukiSU-Ultra/SukiSU-Ultra/tree/05f5cdf082d32bbc651c205ba4bdd1dc66cca7f5/kernel).
+
+## Final-link contract repair
+
+Run 40444338280 compiled successfully and then exposed six undefined symbols. The root adapter now also restores `ksu_manager_appid`, initialized to `KSU_INVALID_APPID`. For Android 16 / 6.12, the SUSFS adapter supplies the actual backup-policy SELinux operations omitted from SukiSU and guards the preinit hooks when this fork has no preinit backend. See [the integration notes](../.github/actions/susfs/sukisu_compat/README.md).
+
+Verification includes five root compatibility tests and three SUSFS wiring tests. In addition, the exact GKI common source was used to compile ARM64 `drivers/kernelsu/ksu.o`, `fs/exec.o`, `security/selinux/selinuxfs.o`, and `security/selinux/hooks.o`. A relocatable link of those objects has definitions for the manager and three SELinux operations, and no unresolved references to any of the six reported symbols. The four-object compile and relocatable-link checks pass both with CFI disabled and with CONFIG_CFI_CLANG=y. These focused probes use host Clang 21 with LTO, Rust and BTF disabled; they are not the complete production-profile image build or device acceptance.

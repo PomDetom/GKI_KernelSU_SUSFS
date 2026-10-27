@@ -37,3 +37,6 @@ jobs:
 
       - name: Test SukiSU kernel compatibility
         run: python3 .github/scripts/test_sukisu_compat.py
+
+      - name: Test SukiSU SUSFS operation wiring
+        run: python3 .github/scripts/test_sukisu_susfs.py
