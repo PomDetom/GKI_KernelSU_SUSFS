@@ -9,6 +9,7 @@ import unittest
 import zipfile
 
 import wsl_build as local
+import wsl_branding
 
 
 class LocalBuildTests(unittest.TestCase):
@@ -18,6 +19,7 @@ class LocalBuildTests(unittest.TestCase):
         self.workspace = Path(self.temporary.name) / "workspace"
         self.workspace.mkdir()
         (self.workspace / "tmp").mkdir()
+        (self.workspace / ".github").symlink_to(local.REPO / ".github", target_is_directory=True)
         (self.workspace / "kernel/common/arch/arm64/configs").mkdir(parents=True)
         (self.workspace / "kernel/common/arch/arm64/configs/gki_defconfig").write_text("# CONFIG_KSU_SUSFS is not set\n")
         (self.workspace / "AnyKernel3").mkdir()
@@ -51,6 +53,12 @@ printf 'commit=abc\n' >> "$GITHUB_OUTPUT"
         kernel = self.workspace / "kernel"
         (kernel / "common/build.config.gki").write_text("check_defconfig\n")
         (kernel / "common/BUILD.bazel").write_text('kernel_build(\n    name = "kernel_aarch64",\n)\n')
+        (kernel / "common/Makefile").write_text("VERSION = 6\nPATCHLEVEL = 12\nSUBLEVEL = 69\n")
+        (kernel / "common/build.config.constants").write_text("BRANCH=android16-6.12\nKMI_GENERATION=6\n")
+        (kernel / "common/scripts").mkdir()
+        script = kernel / "common/scripts/setlocalversion"
+        script.write_text('#!/bin/sh\necho "6.12.69-android16-6-Wild"\n')
+        script.chmod(0o755)
         (kernel / "tools").mkdir()
         tool = kernel / "tools/bazel"
         tool.write_text('''#!/bin/bash
@@ -78,6 +86,12 @@ EOF
         kernel = self.workspace / "kernel"
         self.assertEqual((kernel / "common/BUILD.bazel").read_text().count('check_defconfig = "disabled"'), 1)
         arguments = (kernel / "arguments.log").read_text()
+        self.assertIn("--config=stamp", arguments)
+        self.assertGreater(int(self.build.exports["SOURCE_DATE_EPOCH"]), 1700000000)
+        date = self.build.exports["BUILD_DATE"]
+        expected = f"6.12.69-android16-6-pandora-sukisu{date}-pomdetom"
+        self.assertEqual(self.build.exports["EXPECTED_KERNEL_RELEASE"], expected)
+        self.assertEqual(subprocess.check_output([str(kernel / "common/scripts/setlocalversion")], text=True).strip(), expected)
         self.assertIn("--make_jobs=4", arguments)
         self.assertIn("--jobs=4", arguments)
         self.assertIn("--disk_cache=" + str(self.build.cache / "bazel"), arguments)
@@ -91,6 +105,16 @@ EOF
         with self.assertRaises(ValueError):
             self.build.package()
         self.assertFalse(json.loads(self.build.state_file.read_text())["built"])
+
+    def test_branding_changes_day_without_losing_kmi_or_duplicating_suffix(self):
+        self.make_bazel_fixture()
+        kernel = self.workspace / "kernel/common"
+        template = self.build.brand_template
+        for date in ("20261027", "20261027", "20261028"):
+            expected = f"6.12.69-android16-6-pandora-sukisu{date}-pomdetom"
+            self.assertEqual(wsl_branding.apply(kernel, template, date, True), expected)
+            self.assertEqual(subprocess.check_output([str(kernel / "scripts/setlocalversion")], text=True).strip(), expected)
+        self.assertEqual(self.build.profile["inputs"]["brand_name"], template)
 
     def test_prepare_skip_resume_and_profile_change(self):
         self.build.save(synced=True, prepared=True)

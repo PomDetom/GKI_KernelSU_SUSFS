@@ -17,7 +17,7 @@
     "anykernel3_commit": "e1e9dce98430c5c6f231f7094a8c7f4ecaf50948",
     "droidspaces_commit": "d0b3a2e1fac8d238f78119879811119be35d32f4",
     "feature_set": "SUSFS+NoMount+BBG+NET+DS+NTSync+Ptrace+Unicode+BPF",
-    "brand_name": "Wild",
+    "brand_name": "pandora-sukisu{date}-pomdetom",
     "keep_kmi": true,
     "allow_version_mismatch": false,
     "page_size": "4k",

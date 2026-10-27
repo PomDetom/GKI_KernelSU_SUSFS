@@ -50,6 +50,22 @@ runs:
     #       exit 1
     #     fi
 
+    - name: Set Actual Build Timestamp
+      shell: bash
+      working-directory: ${{ github.workspace }}/kernel
+      run: python3 ../.github/scripts/build_timestamp.py
+
+    - name: Refresh WSL Kernel Branding
+      if: env.WSL_BRAND_TEMPLATE != ''
+      shell: bash
+      working-directory: ${{ github.workspace }}/kernel
+      run: |
+        python3 "${{ env.WSL_BRANDING_SCRIPT }}" \
+          --kernel common \
+          --template "${{ env.WSL_BRAND_TEMPLATE }}" \
+          --date "$BUILD_DATE" \
+          --keep-kmi "${{ env.WSL_KEEP_KMI }}"
+
     - name: 'Build Kernel'
       shell: bash
       working-directory: ${{ github.workspace }}/kernel
@@ -90,6 +106,7 @@ runs:
           fi
           tools/bazel build \
             --config=fast \
+            --config=stamp \
             "${PAGE_SIZE_FLAGS[@]}" \
             "${JOB_FLAGS[@]}" \
             --disk_cache="${BAZEL_CACHE_DIR:-/home/runner/.cache/bazel}" \

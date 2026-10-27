@@ -11,6 +11,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import re
 import shutil
 import subprocess
@@ -129,7 +131,7 @@ class LocalBuild:
     def __init__(self, args):
         self.args = args
         self.profile = json.loads(args.profile.read_text())
-        self.inputs = self.profile["inputs"]
+        self.inputs = dict(self.profile["inputs"])
         if self.inputs["version"] != "android16-6.12" or self.inputs["root_flavor"] != "sukisu-ultra":
             raise ValueError("This local profile supports Android 16 / 6.12 with SukiSU-Ultra only")
         if self.inputs["page_size"] not in ("4k", "16k"):
@@ -138,8 +140,10 @@ class LocalBuild:
             raise ValueError("The local entry builds normal kernels; allow_version_mismatch must be false")
         if not re.fullmatch(r"[0-9a-f]{40}", self.profile["kernel_commit"]):
             raise ValueError("kernel_commit must be a full immutable SHA")
-        if not re.fullmatch(r"[A-Za-z0-9_.-]*", self.inputs["brand_name"]):
-            raise ValueError("brand_name accepts letters, numbers, dots, underscores and hyphens")
+        self.brand_template = self.inputs["brand_name"]
+        if not re.fullmatch(r"[A-Za-z0-9_.-]*", self.brand_template.replace("{date}", "20000101")):
+            raise ValueError("brand_name accepts letters, numbers, dots, underscores, hyphens and {date}")
+        self.inputs["brand_name"] = self.brand_template.replace("{date}", datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d"))
         for key, value in self.inputs.items():
             if key.endswith("_commit") and not re.fullmatch(r"[0-9a-f]{40}", value):
                 raise ValueError(f"{key} must be a full immutable SHA")
@@ -164,6 +168,9 @@ class LocalBuild:
                         KERNEL_BUILD_JOBS=str(self.jobs), KBUILD_BUILD_USER="kleaf", KBUILD_BUILD_HOST="build-host",
                         GIT_AUTHOR_NAME="Local GKI build", GIT_AUTHOR_EMAIL="gki-local@localhost",
                         GIT_COMMITTER_NAME="Local GKI build", GIT_COMMITTER_EMAIL="gki-local@localhost")
+        self.env.update(WSL_BRAND_TEMPLATE=self.brand_template,
+                        WSL_KEEP_KMI=string(self.inputs["keep_kmi"]),
+                        WSL_BRANDING_SCRIPT=str(REPO / "scripts/wsl_branding.py"))
         self.env["PATH"] = str(Path.home() / ".local/bin") + os.pathsep + self.env["PATH"]
         self.steps = self.state.get("steps", {})
         self.workflow = yaml.safe_load((REPO / ".github/workflows/build.yml").read_text())["jobs"]["build-gki"]["steps"]
@@ -363,6 +370,7 @@ class LocalBuild:
         (output / (artifact.name + ".sha256")).write_text(digest + "  " + artifact.name + "\n")
         metadata = {"profile": self.profile, "kernel_source_commit": self.exports["KERNEL_SOURCE_COMMIT"],
                     "components": {key: value for key, value in self.exports.items() if key.endswith("_COMMIT")},
+                    "build_metadata": {key: self.exports[key] for key in ("SOURCE_DATE_EPOCH", "KBUILD_BUILD_TIMESTAMP", "BUILD_DATE", "EXPECTED_KERNEL_RELEASE") if key in self.exports},
                     "recipe_commit": command(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture=True).strip(),
                     "sha256": digest, "status": "Build-verified only", "device_boot": "not-validated"}
         (output / (filename + "-metadata.json")).write_text(json.dumps(metadata, indent=2) + "\n")

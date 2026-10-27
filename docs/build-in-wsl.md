@@ -86,3 +86,21 @@ scripts/wsl-build all --profile /path/to/profile.json --workspace ~/gki-work/ano
 `doctor` 和 `plan` 分别检查本机依赖、实际采用的 action 及其 shell 语法。开发时的本地测试还覆盖嵌套 action、条件、环境和输出传递、三处 SUSFS rollup 修复、重复构建的配置修改，以及打包状态限制。
 
 完整内核编译成功后，才会输出 `Build-verified only` 的元信息。它不代表已验证设备兼容性或开机；这些需要设备验收。首次下载量和时间取决于 Google 源码、工具链与本地网络，首次构建不承诺比云端更快。
+
+## 构建时间与定制后缀
+
+默认 WSL profile 的 `brand_name` 为 `pandora-sukisu{date}-pomdetom`。
+`{date}` 在每次实际编译时按 Asia/Shanghai 的当天日期展开，准备源码的日期
+不会固定后续增量构建的后缀。例如 2026-10-27 的结果为：
+
+```text
+6.12.69-android16-6-pandora-sukisu20261027-pomdetom
+```
+
+`keep_kmi=true` 保留源码中的 KMI_GENERATION=6。构建阶段会覆盖旧品牌输出，
+重复编译不会追加重复后缀。内核源码版本、4K 页大小及功能组合保持原配置。
+这一默认定制只在 wsl 分支的本地入口使用，main 不加入该后缀。
+
+Bazel 同时启用 `--config=fast --config=stamp`。时间戳采用实际编译时刻，
+内核显示 UTC 时间；品牌日期采用北京时间。ZIP 配套 metadata JSON 会记录
+本次时间戳、品牌日期和预期 release。详见 [构建时间戳](build-metadata.md)。
