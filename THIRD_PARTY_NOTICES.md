@@ -1,7 +1,7 @@
 # Third-Party Notices — GKI_KernelSU_SUSFS
 
 > [!NOTE]
-> This file lists third-party code fetched during CI and included in the build's output zip(s). None of it is vendored in this repo — each dependency is pulled fresh at build time and retains its own original license.
+> This file lists third-party code fetched during CI and included in the build's output zip(s). Dependencies are pulled fresh at build time, except for the scoped SUSFS compatibility patch described below. Each dependency retains its own original license.
 
 | Component | Upstream | License |
 |-----------|----------|---------|
@@ -19,6 +19,8 @@
 | AnyKernel3 | [WildKernels/AnyKernel3](https://github.com/WildKernels/AnyKernel3) | BSD |
 | magiskboot | [topjohnwu/Magisk](https://github.com/topjohnwu/Magisk) via AnyKernel3 | GPL-3.0 |
 | DroidSpaces | [ravindu644/Droidspaces-OSS](https://github.com/ravindu644/Droidspaces-OSS) | GPL-3.0 |
+
+The SUSFS compatibility patch at `.github/actions/susfs-patches/compat/50_add_susfs-68067f2-adapted.patch` derives from simonpunk/susfs4ksu commit `9c9f19d8395693327c78df36569b44e94c187b8a`. It adapts only the `fs/proc/task_mmu.c` section for GKI commit `68067f2dc973fef7f359efc0fd07e37a97a1d099`; the other 23 file sections are unchanged. See the adjacent README for provenance and verification.
 
 <details>
 <summary> About magiskboot binaries</summary>

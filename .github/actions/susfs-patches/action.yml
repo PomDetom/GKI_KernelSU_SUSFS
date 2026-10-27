@@ -138,7 +138,17 @@ runs:
       shell: bash
       working-directory: ${{ github.workspace }}/kernel/common
       run: |
-        patch -p1 < 50_add_susfs_in_gki-${{ inputs.version }}.patch
+        SUSFS_PATCH="50_add_susfs_in_gki-${{ inputs.version }}.patch"
+        # This pinned pair has the three-call do/for_each_vma rollup, while
+        # upstream SUSFS hunks 5/6 expect a different rollup API and control flow.
+        if [[ "${{ inputs.version }}" == "android16-6.12" &&
+              "${KERNEL_SOURCE_COMMIT:-}" == "68067f2dc973fef7f359efc0fd07e37a97a1d099" &&
+              "${SUSFS_COMMIT:-}" == "9c9f19d8395693327c78df36569b44e94c187b8a" ]]; then
+          SUSFS_PATCH="${GITHUB_WORKSPACE}/.github/actions/susfs-patches/compat/50_add_susfs-68067f2-adapted.patch"
+          echo "Using GKI 68067f2 SUSFS rollup adaptation (all three statistics paths)"
+          patch --batch --fuzz=0 --dry-run -p1 < "$SUSFS_PATCH"
+        fi
+        patch -p1 < "$SUSFS_PATCH"
 
         # SUSFS's OPEN_REDIRECT code unconditionally calls VMA_PAD_START(), which
         # only exists on GKI branches that carry Google's page-size-migration
