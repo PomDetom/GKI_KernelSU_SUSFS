@@ -24,3 +24,8 @@ The `#1 SMP PREEMPT ...` time should correspond to the build instant in UTC,
 and must not read 1970. Device `/proc/version` reflects the Image actually booted.
 The timestamp change applies to both main and wsl; main's branding inputs and
 branding action are unchanged.
+
+The Bazel invocation also supplies `--extra_git_project=common`, so the kernel
+project is included in workspace status even when repo discovery is unavailable.
+The WSL runner adds its downloaded `workspace/bin/repo` to PATH for manifest
+discovery. This prevents a stamped build from receiving an empty epoch map.
