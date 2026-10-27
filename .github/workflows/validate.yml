@@ -34,3 +34,6 @@ jobs:
 
       - name: Test WSL build adapter
         run: python3 scripts/test_wsl_build.py
+
+      - name: Test SukiSU kernel compatibility
+        run: python3 .github/scripts/test_sukisu_compat.py
