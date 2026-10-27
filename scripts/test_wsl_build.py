@@ -87,6 +87,8 @@ EOF
         self.assertEqual((kernel / "common/BUILD.bazel").read_text().count('check_defconfig = "disabled"'), 1)
         arguments = (kernel / "arguments.log").read_text()
         self.assertIn("--config=stamp", arguments)
+        self.assertIn("--extra_git_project=common", arguments)
+        self.assertTrue(self.build.env["PATH"].startswith(str(self.workspace / "bin") + ":"))
         self.assertGreater(int(self.build.exports["SOURCE_DATE_EPOCH"]), 1700000000)
         date = self.build.exports["BUILD_DATE"]
         expected = f"6.12.69-android16-6-pandora-sukisu{date}-pomdetom"

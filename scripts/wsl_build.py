@@ -171,7 +171,7 @@ class LocalBuild:
         self.env.update(WSL_BRAND_TEMPLATE=self.brand_template,
                         WSL_KEEP_KMI=string(self.inputs["keep_kmi"]),
                         WSL_BRANDING_SCRIPT=str(REPO / "scripts/wsl_branding.py"))
-        self.env["PATH"] = str(Path.home() / ".local/bin") + os.pathsep + self.env["PATH"]
+        self.env["PATH"] = str(self.workspace / "bin") + os.pathsep + str(Path.home() / ".local/bin") + os.pathsep + self.env["PATH"]
         self.steps = self.state.get("steps", {})
         self.workflow = yaml.safe_load((REPO / ".github/workflows/build.yml").read_text())["jobs"]["build-gki"]["steps"]
 

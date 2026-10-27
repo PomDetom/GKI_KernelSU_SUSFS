@@ -107,6 +107,7 @@ runs:
           tools/bazel build \
             --config=fast \
             --config=stamp \
+            --extra_git_project=common \
             "${PAGE_SIZE_FLAGS[@]}" \
             "${JOB_FLAGS[@]}" \
             --disk_cache="${BAZEL_CACHE_DIR:-/home/runner/.cache/bazel}" \
