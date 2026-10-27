@@ -112,6 +112,13 @@ runs:
         echo "ROOT_VERSION=$root_version" >> "$GITHUB_ENV"
         echo "ROOT_COMMIT=$actual_commit" >> "$GITHUB_ENV"
 
+    - name: Adapt SukiSU to kernel header interfaces
+      if: inputs.flavor == 'sukisu-ultra'
+      shell: bash
+      working-directory: ${{ github.workspace }}/kernel
+      run: |
+        python3 "${{ github.workspace }}/.github/scripts/fix_sukisu_compat.py" common SukiSU-Ultra/kernel
+
     - name: Enable root configuration
       uses: ./.github/actions/set-kernel-config
       with:

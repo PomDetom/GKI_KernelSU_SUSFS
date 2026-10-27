@@ -1,0 +1,19 @@
+# SukiSU kernel interface compatibility
+
+[Run 40439910371](https://github.com/PomDetom/GKI_KernelSU_SUSFS/actions/runs/40439910371/job/121977786130) passed the SUSFS patch stage and reached compilation with GKI `68067f2dc973fef7f359efc0fd07e37a97a1d099` and SukiSU-Ultra `05f5cdf082d32bbc651c205ba4bdd1dc66cca7f5`.
+
+The five compiler diagnostics have three causes in the pinned SukiSU source:
+
+1. `super_access.c` registers `netlink_kernel_cfg.cb_mutex`, which is absent from this GKI header. The two invalid-member diagnostics also cause the incomplete-array `sizeof` diagnostic. Remove this metadata entry only when the actual target structure lacks the field. Do not invent an offset or alter the kernel structure.
+2. `throne_tracker.c` lacks a semicolon after the `my_dir_context` initializer ending in `.depth = pos->depth }`. Restore the declaration terminator.
+3. `lsm_hook.c` passes the old string argument to `security_add_hooks`, but the target prototype requires `const struct lsm_id *`. For this prototype, pass a persistent `static const struct lsm_id` with name `ksu` and ID `LSM_ID_UNDEF`. The legacy string-based registration remains unchanged on headers using the old API.
+
+The root setup action runs `.github/scripts/fix_sukisu_compat.py` for SukiSU-Ultra after cloning and before compilation. It probes the target headers rather than guessing from the version number, validates all source transformations before writing, and is repeatable. KPM, LSM hooks, root and SUSFS remain enabled according to the selected configuration.
+
+Focused tests reproduce the old errors with Clang, compile the corrected API forms with warnings treated as errors, exercise modern/legacy/mixed headers, and check repeatability and an unknown source layout. These are small interface fixtures, not a complete kernel compilation or proof of device boot.
+
+```bash
+python3 .github/scripts/test_sukisu_compat.py
+```
+
+Sources: [target netlink header](https://android.googlesource.com/kernel/common/+/68067f2dc973fef7f359efc0fd07e37a97a1d099/include/linux/netlink.h), [target LSM header](https://android.googlesource.com/kernel/common/+/68067f2dc973fef7f359efc0fd07e37a97a1d099/include/linux/lsm_hooks.h), and [pinned SukiSU source](https://github.com/SukiSU-Ultra/SukiSU-Ultra/tree/05f5cdf082d32bbc651c205ba4bdd1dc66cca7f5/kernel).
